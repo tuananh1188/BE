@@ -3,6 +3,7 @@ import { UserModel } from '../models/user.model';
 import { comparePassword, hashPassword } from '../utils/hash';
 import { signToken } from '../utils/jwt';
 import { createUserWithOtp, issueOtpForUser, issueResetToken } from '../services/user.service';
+import { removeListener } from 'node:cluster';
 
 export const register = async (req: Request, res: Response) => {
   const { email, password } = req.body as { email: string; password: string };
@@ -52,7 +53,7 @@ export const verifyLoginOtp = async (req: Request, res: Response) => {
   user.otpExpiresAt = undefined;
   await user.save();
 
-  const token = signToken({ sub: String(user._id), email: user.email });
+  const token = signToken({ sub: String(user._id), email: user.email, role: user.role });
   return res.json({ token });
 };
 
