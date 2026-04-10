@@ -8,8 +8,15 @@ import { profileRouter } from './routes/profile.route';
 import productRouter from './routes/product.router';
 
 export const app = express();
+const allowedOrigins = ['https://tuananh-bay.vercel.app', 'http://localhost:5173'];
 
-app.use(cors({ origin: env.clientUrl }));
+app.use(cors({ origin: function(origin,callback) {
+    if(!origin || allowedOrigins.indexOf(origin) !== -1) {
+        callback(null,true)
+    } else{
+        callback(new Error('Not allowed by CORS'))
+    }},
+}));
 app.use(express.json());
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 300 }));
 
