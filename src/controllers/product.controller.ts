@@ -1,23 +1,48 @@
 import { Request, Response } from 'express';
 import { ProductModel } from '../models/product.model';
-import { trusted } from 'mongoose';
-import { success } from 'zod';
+
 
 export const getAllProducts = async (req: Request, res: Response) => {
-    const { search } = req.query;
-    const query = search ? { name: { $regex: search, $options: 'i' } } : {};
+    try {
+        const { search, category } = req.query;
+        let query: any = {};
 
-    const products = await ProductModel.find(query as any);
-    res.json(products);
+        if (search) {
+            query.$text = { $search: search as string, $optional: 'i' };
+        }
+
+        if (category) {
+            query.category = category;
+        }
+
+        const products = await ProductModel.find(query).sort({ createdAt: -1 });
+        res.json({
+            success: true,
+            count: products.length,
+            data: products
+        })
+
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message })
+
+    }
+
 };
 
 export const getProductById = async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const product = await ProductModel.findById(id);
+    try {
+        const { id } = req.params;
+        const product = await ProductModel.findById(id);
 
-    if (!product)
-        return res.status(404).json({ message: 'Product not found !' });
-    res.json(product);
+        if (!product)
+            return res.status(404).json({ success: false, message: 'Product not found !' });
+        res.json({ success: true, data: product });
+
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: ' Invalid Product ID' })
+
+    }
+
 };
 
 export const createProduct = async (req: Request, res: Response) => {

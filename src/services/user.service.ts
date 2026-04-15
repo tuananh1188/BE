@@ -20,7 +20,12 @@ export const createUserWithOtp = async (email: string, password: string) => {
     otpExpiresAt: otpExpiry()
   });
 
-  await sendOtpEmail(email, otp);
+  try {
+    await sendOtpEmail(email, otp);
+  } catch (emailErr) {
+    console.error('[email] Failed to send registration OTP:', emailErr);
+    console.log(`[dev] OTP for ${email}: ${otp}`);
+  }
   return user;
 };
 
@@ -33,7 +38,12 @@ export const issueOtpForUser = async (userId: string) => {
   user.otpExpiresAt = otpExpiry();
   await user.save();
 
-  await sendOtpEmail(user.email, otp);
+  try {
+    await sendOtpEmail(user.email, otp);
+  } catch (emailErr) {
+    console.error('[email] Failed to send login OTP:', emailErr);
+    console.log(`[dev] OTP for ${user.email}: ${otp}`);
+  }
   return user;
 };
 

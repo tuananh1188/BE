@@ -23,10 +23,10 @@
     "mongoose": "^9.4.1",
     "multer": "^2.1.1",
     "nodemailer": "^8.0.4",
+    "slugify": "^1.6.9",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@vercel/node": "^5.3.25",
     "@types/bcryptjs": "^2.4.6",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
@@ -35,6 +35,7 @@
     "@types/multer": "^2.1.0",
     "@types/node": "^25.5.2",
     "@types/nodemailer": "^8.0.0",
+    "@vercel/node": "^5.3.25",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2"
   }

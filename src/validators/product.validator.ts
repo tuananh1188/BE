@@ -2,10 +2,11 @@ import { z } from 'zod';
 export const createProductSchema = z.object({
     name: z.string().trim().min(3, 'Name is required!'),
     description: z.string().min(10, 'Description is required !'),
-    price: z.number().min(0, 'The price must not be less than 0. !'),
+    originalPrice: z.number().min(0, 'Original price must be 0 or higher!'),
+    discount: z.number().min(0).max(100).optional().default(0),
     category: z.string().min(1, 'Category is required !  '),
     images: z
-        .array(z.string().url('Invalid image link !'))
+        .array(z.string().min(1, 'Image link cannot be empty'))
         .min(1, 'image is required !')
         .default([]),
     stock: z.number().int().min(0).default(0),
