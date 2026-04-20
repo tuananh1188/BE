@@ -6,6 +6,7 @@ import { errorMiddleware } from './middlewares/error.middleware';
 import { authRouter } from './routes/auth.route';
 import { profileRouter } from './routes/profile.route';
 import productRouter from './routes/product.router';
+import categoryRouter from './routes/category.router';
 
 export const app = express();
 const isAllowedOrigin = (origin: string | undefined): boolean => {
@@ -32,4 +33,5 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRouter);
 app.use('/api/profile', profileRouter);
 app.use('/api/product', productRouter);
+app.use('/api/category', categoryRouter);
 app.use(errorMiddleware);

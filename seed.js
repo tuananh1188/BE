@@ -2,6 +2,15 @@ const mongoose = require('mongoose');
 
 const uri = "mongodb+srv://tuananh88:tuananh88@cluster-web93.ef5lars.mongodb.net/SPCK-X41";
 
+const categorySchema = new mongoose.Schema({
+    name: { type: String, required: true, unique: true },
+    slug: String,
+    image: String,
+    description: String
+}, { timestamps: true });
+
+const Category = mongoose.models.Category || mongoose.model('Category', categorySchema, 'categories');
+
 const productSchema = new mongoose.Schema({
     name: String,
     slug: String,
@@ -9,7 +18,7 @@ const productSchema = new mongoose.Schema({
     price: Number,
     originalPrice: Number,
     discount: Number,
-    category: String,
+    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },
     images: [String],
     stock: Number,
     rating: { type: Number, default: 0 },
@@ -20,7 +29,7 @@ const productSchema = new mongoose.Schema({
 
 const Product = mongoose.models.Product || mongoose.model('Product', productSchema, 'products');
 
-const CATEGORIES = {
+const CATEGORIES_DATA = {
     'Electronics': [
         'Sony WH-1000XM4 Wireless Headphones', 'Apple AirPods Pro', 'Samsung Galaxy Watch 5',
         'Mechanical Gaming Keyboard', 'Logitech MX Master 3 Mouse', 'Nintendo Switch OLED',
@@ -47,26 +56,39 @@ const CATEGORIES = {
     ]
 };
 
-const categoryKeys = Object.keys(CATEGORIES);
+const categoryNames = Object.keys(CATEGORIES_DATA);
 
 async function seed() {
     try {
         await mongoose.connect(uri);
         console.log("Connected to DB");
 
-        // Remove the previous fake products
-        const deleteResult = await Product.deleteMany({ name: { $regex: /Fake/i } });
-        console.log(`Deleted ${deleteResult.deletedCount} old fake products`);
+        // Clear existing data to avoid conflicts with new structure
+        await Product.deleteMany({});
+        await Category.deleteMany({});
+        console.log("Cleared old products and categories");
+
+        // Create Categories
+        const categoriesMap = {};
+        for (const name of categoryNames) {
+            const cat = await Category.create({
+                name,
+                slug: name.toLowerCase().replace(/\s+/g, '-'),
+                description: `High-quality products in the ${name} category.`,
+                image: `https://picsum.photos/seed/${name.replace(/\s/g, '')}/800/400`
+            });
+            categoriesMap[name] = cat._id;
+        }
+        console.log("Created 4 categories");
 
         const products = [];
         let counter = 1;
 
         for (let i = 0; i < 50; i++) {
-            const category = categoryKeys[i % 4];
-            const namesArray = CATEGORIES[category];
-            // pick a random name from the category list
+            const categoryName = categoryNames[i % 4];
+            const namesArray = CATEGORIES_DATA[categoryName];
             const baseName = namesArray[Math.floor(Math.random() * namesArray.length)];
-            const productName = `${baseName} (Fake ${counter})`; // Append fake counter just to keep them unique
+            const productName = `${baseName} (Fake ${counter})`;
 
             const originalPrice = Math.floor(Math.random() * 500) + 50;
             const discount = Math.floor(Math.random() * 30);
@@ -75,15 +97,14 @@ async function seed() {
             products.push({
                 name: productName,
                 slug: `random-product-${Date.now()}-${counter}`,
-                description: `This is a high-quality ${baseName} designed to provide the best experience for ${category} enthusiasts. Enjoy premium materials and top-tier build quality.`,
+                description: `This is a high-quality ${baseName} designed to provide the best experience for ${categoryName} enthusiasts. Enjoy premium materials and top-tier build quality.`,
                 price: parseFloat(price.toFixed(2)),
                 originalPrice,
                 discount,
-                category: category,
-                // generate random image per product by seeding picsum with a unique string
-                images: [`https://picsum.photos/seed/${category.replace(/\s/g, '')}${counter}/500/500`],
+                category: categoriesMap[categoryName],
+                images: [`https://picsum.photos/seed/${categoryName.replace(/\s/g, '')}${counter}/500/500`],
                 stock: Math.floor(Math.random() * 100) + 10,
-                rating: parseFloat((4 + Math.random()).toFixed(1)), // random rating between 4.0 and 5.0
+                rating: parseFloat((4 + Math.random()).toFixed(1)),
                 soldPercentage: Math.floor(Math.random() * 100),
                 totalSold: Math.floor(Math.random() * 1000)
             });
@@ -91,7 +112,7 @@ async function seed() {
         }
 
         await Product.insertMany(products);
-        console.log("Successfully inserted 50 realistic fake products");
+        console.log("Successfully inserted 50 realistic fake products linked to categories");
         process.exit(0);
     } catch (e) {
         console.error(e);

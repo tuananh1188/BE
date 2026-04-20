@@ -15,7 +15,7 @@ export const getAllProducts = async (req: Request, res: Response) => {
             query.category = category;
         }
 
-        const products = await ProductModel.find(query).sort({ createdAt: -1 });
+        const products = await ProductModel.find(query).populate('category').sort({ createdAt: -1 });
         res.json({
             success: true,
             count: products.length,
@@ -32,7 +32,7 @@ export const getAllProducts = async (req: Request, res: Response) => {
 export const getProductById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const product = await ProductModel.findById(id);
+        const product = await ProductModel.findById(id).populate('category');
 
         if (!product)
             return res.status(404).json({ success: false, message: 'Product not found !' });
