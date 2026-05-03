@@ -69,7 +69,7 @@ export const verifyLoginOtp = async (req: Request, res: Response) => {
 
 export const getMe = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.sub; // Đảm bảo authGuard đã set req.user
+    const userId = (req as any).user?.sub; // Đảm bảo authGuard đã set req.user
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
     const user = await UserModel.findById(userId).select('-password -otpCode -resetToken');

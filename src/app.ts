@@ -7,8 +7,21 @@ import { authRouter } from './routes/auth.route';
 import { profileRouter } from './routes/profile.route';
 import productRouter from './routes/product.router';
 import categoryRouter from './routes/category.router';
+import cartRouter from './routes/cart.router';
+import orderRouter from './routes/order.router';
+import { userRouter } from './routes/user.route';
+import { getDashboardStats } from './controllers/order.controller';
+import { authGuard } from './middlewares/auth.middleware';
+import { isAdmin } from './middlewares/admin.middleware';
 
 export const app = express();
+
+// Debug Logging - Top Level
+app.use((req, _res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
 const isAllowedOrigin = (origin: string | undefined): boolean => {
   if (!origin) return true; // same-origin / server-to-server (Vite proxy)
   if (origin === 'https://tuananh-bay.vercel.app') return true;
@@ -33,5 +46,8 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRouter);
 app.use('/api/profile', profileRouter);
 app.use('/api/product', productRouter);
-app.use('/api/category', categoryRouter);
+app.use('/api/categories', categoryRouter);
+app.use('/api/cart', cartRouter);
+app.use('/api/orders', orderRouter);
+app.use('/api/users', userRouter);
 app.use(errorMiddleware);

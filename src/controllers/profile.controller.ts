@@ -7,7 +7,7 @@ import { UpdateProfileInput } from '../validators/profile.validator';
 const EXCLUDED_FIELDS = '-password -otpCode -otpExpiresAt -resetToken -resetTokenExpiresAt';
 
 export const updateProfile = async (req: Request, res: Response) => {
-  const userId = req.user?.sub;
+  const userId = (req as any).user?.sub;
   const { displayName, bio, phone } = req.body as UpdateProfileInput;
 
   const user = await UserModel.findByIdAndUpdate(
@@ -21,7 +21,7 @@ export const updateProfile = async (req: Request, res: Response) => {
 };
 
 export const uploadAvatar = async (req: Request, res: Response) => {
-  const userId = req.user?.sub;
+  const userId = (req as any).user?.sub;
 
   if (!req.file) return res.status(400).json({ message: 'No file provided' });
 

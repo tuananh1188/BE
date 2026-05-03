@@ -9,7 +9,7 @@ export const authGuard = (req: Request, res: Response, next: NextFunction) => {
 
   try {
     const token = authHeader.slice(7);
-    req.user = verifyToken(token);
+    (req as any).user = verifyToken(token);
     return next();
   } catch {
     return res.status(401).json({ message: 'Unauthorized' });
