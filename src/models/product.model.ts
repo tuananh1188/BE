@@ -13,6 +13,7 @@ export interface ProductDocument extends Document {
     discount: number;
     soldPercentage: number;
     totalSold: number;
+    reviewCount: number;
 }
 
 const productSchema = new Schema<ProductDocument>(
@@ -28,7 +29,8 @@ const productSchema = new Schema<ProductDocument>(
         stock: { type: Number, required: true, default: 0, min: 0 },
         rating: { type: Number, default: 0, min: 0, max: 5 },
         soldPercentage: { type: Number, default: 0, min: 0, max: 100 },
-        totalSold: { type: Number, default: 0, min: 0 }
+        totalSold: { type: Number, default: 0, min: 0 },
+        reviewCount: { type: Number, default: 0, min: 0 }
     },
     { timestamps: true }
 );
