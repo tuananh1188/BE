@@ -70,14 +70,14 @@ export const createOrder = async (req: Request, res: Response) => {
             promoCode
         });
 
-        // Deduct stock for products
+        // Deduct stock for products and update totalSold
         for (const item of orderItems) {
-            await ProductModel.findByIdAndUpdate(item.product, {
-                $inc: { 
-                    stock: -item.quantity,
-                    totalSold: item.quantity
-                }
-            });
+            const product = await ProductModel.findById(item.product);
+            if (product) {
+                product.stock -= item.quantity;
+                product.totalSold = (product.totalSold || 0) + item.quantity;
+                await product.save();
+            }
         }
 
         // Clear the user's cart

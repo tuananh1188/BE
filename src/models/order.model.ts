@@ -6,6 +6,8 @@ export interface OrderItemDocument extends Document {
     image: string;
     price: number;
     quantity: number;
+    size?: string;
+    color?: string;
 }
 
 export interface OrderDocument extends Document {
@@ -38,7 +40,9 @@ const orderItemSchema = new Schema<OrderItemDocument>({
     name: { type: String, required: true },
     image: { type: String },
     price: { type: Number, required: true },
-    quantity: { type: Number, required: true, min: 1 }
+    quantity: { type: Number, required: true, min: 1 },
+    size: { type: String },
+    color: { type: String }
 });
 
 const orderSchema = new Schema<OrderDocument>(

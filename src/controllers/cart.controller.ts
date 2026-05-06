@@ -41,21 +41,30 @@ export const addToCart = async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user?.sub;
         if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
-        const { productId, quantity } = req.body;
+        const { productId, quantity, size, color } = req.body;
 
         let cart = await CartModel.findOne({ userId: userId as any });
         if (!cart) {
             cart = new CartModel({ userId: userId as any, items: [], totalAmount: 0 });
         }
 
+        // Tìm item có cùng productId, cùng size và cùng color
         const existingItemIndex = cart.items.findIndex(
-            (item) => item.product.toString() === productId
+            (item) => 
+                item.product.toString() === productId && 
+                item.size === size && 
+                item.color === color
         );
 
         if (existingItemIndex > -1) {
             cart.items[existingItemIndex].quantity += (quantity || 1);
         } else {
-            cart.items.push({ product: productId, quantity: quantity || 1 } as any);
+            cart.items.push({ 
+                product: productId as any, 
+                quantity: quantity || 1,
+                size,
+                color
+            } as any);
         }
 
         await cart.save();
@@ -81,7 +90,7 @@ export const updateCartItem = async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user?.sub;
         if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
-        const { productId } = req.params;
+        const { itemId } = req.params; // Chuyển từ productId sang itemId
         const { quantity } = req.body;
 
         if (quantity < 1) {
@@ -93,7 +102,8 @@ export const updateCartItem = async (req: Request, res: Response) => {
             return res.status(404).json({ success: false, message: 'Cart not found' });
         }
 
-        const item = cart.items.find((item) => item.product.toString() === productId);
+        // Tìm đúng item dựa trên _id của nó trong mảng items
+        const item = cart.items.find((item) => item._id?.toString() === itemId);
         if (!item) {
             return res.status(404).json({ success: false, message: 'Item not found in cart' });
         }
@@ -121,18 +131,15 @@ export const removeCartItem = async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user?.sub;
         if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
-        const { productId } = req.params;
+        const { itemId } = req.params;
 
         let cart = await CartModel.findOne({ userId: userId as any });
         if (!cart) {
             return res.status(404).json({ success: false, message: 'Cart not found' });
         }
 
-        // Robust filtering to handle both populated and unpopulated product fields
-        cart.items = cart.items.filter((item: any) => {
-            const itemProdId = item.product?._id ? item.product._id.toString() : item.product?.toString();
-            return itemProdId !== productId;
-        }) as any;
+        // Lọc bỏ item dựa trên _id của item
+        cart.items = cart.items.filter((item: any) => item._id?.toString() !== itemId) as any;
 
         await cart.save();
 

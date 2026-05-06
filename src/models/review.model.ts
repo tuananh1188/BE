@@ -1,8 +1,8 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ReviewDocument extends Document {
-    user: mongoose.Schema.Types.ObjectId;
-    product: mongoose.Schema.Types.ObjectId;
+    user: mongoose.Types.ObjectId;
+    product: mongoose.Types.ObjectId;
     rating: number;
     comment: string;
 }

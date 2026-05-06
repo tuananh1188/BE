@@ -15,8 +15,8 @@ cartRouter.use(authGuard);
 
 cartRouter.get('/', getCart);
 cartRouter.post('/add', addToCart);
-cartRouter.put('/update/:productId', updateCartItem);
-cartRouter.delete('/remove/:productId', removeCartItem);
+cartRouter.put('/update/:itemId', updateCartItem);
+cartRouter.delete('/remove/:itemId', removeCartItem);
 cartRouter.delete('/clear', clearCart);
 
 export default cartRouter;

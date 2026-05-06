@@ -45,15 +45,34 @@ export const getProductById = async (req: Request, res: Response) => {
 
 };
 
+import { uploadToCloudinary } from '../utils/cloudinary.util';
+
 export const createProduct = async (req: Request, res: Response) => {
     try {
-        const newProduct = await ProductModel.create(req.body);
+        let images = req.body.images || [];
+
+        // Nếu có file upload, upload lên Cloudinary và lấy URL
+        if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+            const uploadPromises = (req.files as Express.Multer.File[]).map(file =>
+                uploadToCloudinary(file.buffer)
+            );
+            const uploadedUrls = await Promise.all(uploadPromises);
+            images = [...images, ...uploadedUrls];
+        }
+
+        const productData = {
+            ...req.body,
+            images
+        };
+
+        const newProduct = await ProductModel.create(productData);
         res.status(201).json({
             success: true,
             message: 'Create product successfully !',
             data: newProduct
         });
     } catch (error: any) {
+        console.error("Create Product Error:", error);
         res.status(400).json({
             success: false,
             message: error.message
@@ -64,11 +83,36 @@ export const createProduct = async (req: Request, res: Response) => {
 export const updateProduct = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
+        let images = req.body.images;
+
+        // Nếu images là chuỗi (đến từ form-data nếu chỉ có 1 URL), chuyển thành mảng
+        if (typeof images === 'string') {
+            images = [images];
+        }
+
+        // Nếu có file upload mới
+        if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+            const uploadPromises = (req.files as Express.Multer.File[]).map(file =>
+                uploadToCloudinary(file.buffer)
+            );
+            const uploadedUrls = await Promise.all(uploadPromises);
+            
+            // Nếu req.body.images tồn tại (giữ các ảnh cũ), thì gộp lại. 
+            // Nếu không thì chỉ dùng ảnh mới.
+            images = [...(images || []), ...uploadedUrls];
+        }
+
+        const updateData = {
+            ...req.body,
+            ...(images && { images })
+        };
+
         const updatedProduct = await ProductModel.findByIdAndUpdate(
             id,
-            req.body,
+            updateData,
             { new: true, runValidators: true }
         );
+
         if (!updatedProduct) {
             return res.status(404).json({
                 success: false,
@@ -81,6 +125,7 @@ export const updateProduct = async (req: Request, res: Response) => {
             data: updatedProduct
         });
     } catch (error: any) {
+        console.error("Update Product Error:", error);
         res.status(400).json({
             success: false,
             message: error.message
