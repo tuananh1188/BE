@@ -3,6 +3,7 @@ import { OrderModel } from '../models/order.model';
 import { CartModel } from '../models/cart.model';
 import { ProductModel } from '../models/product.model';
 import { UserModel } from '../models/user.model';
+import { VoucherModel } from '../models/voucher.model';
 
 export const createOrder = async (req: Request, res: Response) => {
     try {
@@ -53,7 +54,31 @@ export const createOrder = async (req: Request, res: Response) => {
         const shippingFee = 0; // Free shipping for now
         const taxRate = 0.08;
         const tax = subtotal * taxRate;
-        const totalAmount = subtotal + shippingFee + tax;
+        let totalAmount = subtotal + shippingFee + tax;
+        let discountAmount = 0;
+
+        // Apply Voucher if exists
+        if (promoCode) {
+            const voucher = await VoucherModel.findOne({ code: promoCode, isActive: true });
+            if (voucher) {
+                // Validate expiry
+                if (new Date(voucher.expiryDate) > new Date() && voucher.usedCount < voucher.usageLimit && totalAmount >= voucher.minOrderAmount) {
+                    if (voucher.type === 'fixed') {
+                        discountAmount = voucher.value;
+                    } else {
+                        discountAmount = (totalAmount * voucher.value) / 100;
+                        if (voucher.maxDiscountAmount && discountAmount > voucher.maxDiscountAmount) {
+                            discountAmount = voucher.maxDiscountAmount;
+                        }
+                    }
+                    totalAmount = Math.max(0, totalAmount - discountAmount);
+                    
+                    // Increment voucher usage
+                    voucher.usedCount += 1;
+                    await voucher.save();
+                }
+            }
+        }
 
         // Create the order
         const newOrder = await OrderModel.create({

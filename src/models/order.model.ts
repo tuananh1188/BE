@@ -20,7 +20,7 @@ export interface OrderDocument extends Document {
         city?: string;
         notes?: string;
     };
-    paymentMethod: 'COD' | 'CREDIT_CARD';
+    paymentMethod: 'COD' | 'CREDIT_CARD' | 'BANK_TRANSFER';
     paymentStatus: 'PENDING' | 'PAID' | 'FAILED';
     orderStatus: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
     subtotal: number;
@@ -63,7 +63,7 @@ const orderSchema = new Schema<OrderDocument>(
         },
         paymentMethod: {
             type: String,
-            enum: ['COD', 'CREDIT_CARD'],
+            enum: ['COD', 'CREDIT_CARD', 'BANK_TRANSFER'],
             default: 'COD'
         },
         paymentStatus: {

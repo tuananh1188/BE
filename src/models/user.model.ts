@@ -12,6 +12,8 @@ export interface UserDocument extends mongoose.Document {
     bio?: string;
     avatarUrl?: string;
     phone?: string;
+    address?: string;
+    city?: string;
     role: 'user' | 'admin';
 }
 
@@ -34,6 +36,8 @@ const userSchema = new Schema<UserDocument>(
         bio: { type: String, maxlength: 200 },
         avatarUrl: { type: String },
         phone: { type: String, trim: true },
+        address: { type: String, trim: true },
+        city: { type: String, trim: true },
         role: { type: String, enum: ['user', 'admin'], default: 'user' }
     },
     { timestamps: true }

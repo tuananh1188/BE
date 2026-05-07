@@ -8,11 +8,11 @@ const EXCLUDED_FIELDS = '-password -otpCode -otpExpiresAt -resetToken -resetToke
 
 export const updateProfile = async (req: Request, res: Response) => {
   const userId = (req as any).user?.sub;
-  const { displayName, bio, phone } = req.body as UpdateProfileInput;
+  const { displayName, bio, phone, address, city } = req.body as UpdateProfileInput;
 
   const user = await UserModel.findByIdAndUpdate(
     userId,
-    { displayName, bio, phone },
+    { displayName, bio, phone, address, city },
     { new: true, runValidators: true }
   ).select(EXCLUDED_FIELDS);
 

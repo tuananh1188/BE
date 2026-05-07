@@ -10,6 +10,8 @@ import categoryRouter from './routes/category.router';
 import cartRouter from './routes/cart.router';
 import orderRouter from './routes/order.router';
 import reviewRouter from './routes/review.route';
+import favoriteRouter from './routes/favorite.route';
+import voucherRouter from './routes/voucher.route';
 import { userRouter } from './routes/user.route';
 import { getDashboardStats } from './controllers/order.controller';
 import { authGuard } from './middlewares/auth.middleware';
@@ -38,7 +40,6 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true,
 }));
 app.use(express.json());
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 300 }));
@@ -51,5 +52,7 @@ app.use('/api/categories', categoryRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/orders', orderRouter);
 app.use('/api/reviews', reviewRouter);
+app.use('/api/favorites', favoriteRouter);
+app.use('/api/vouchers', voucherRouter);
 app.use('/api/users', userRouter);
 app.use(errorMiddleware);

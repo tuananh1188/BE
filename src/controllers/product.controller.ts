@@ -4,29 +4,44 @@ import { ProductModel } from '../models/product.model';
 
 export const getAllProducts = async (req: Request, res: Response) => {
     try {
-        const { search, category } = req.query;
+        const { search, category, minPrice, maxPrice, sort } = req.query;
         let query: any = {};
 
         if (search) {
-            query.$text = { $search: search as string, $optional: 'i' };
+            query.$or = [
+                { name: { $regex: search as string, $options: 'i' } },
+                { description: { $regex: search as string, $options: 'i' } }
+            ];
         }
 
         if (category) {
             query.category = category;
         }
 
-        const products = await ProductModel.find(query).populate('category').sort({ createdAt: -1 });
+        if (minPrice || maxPrice) {
+            query.price = {};
+            if (minPrice) query.price.$gte = Number(minPrice);
+            if (maxPrice) query.price.$lte = Number(maxPrice);
+        }
+
+        let sortQuery: any = { createdAt: -1 };
+        if (sort) {
+            if (sort === 'price-asc') sortQuery = { price: 1 };
+            else if (sort === 'price-desc') sortQuery = { price: -1 };
+            else if (sort === 'newest') sortQuery = { createdAt: -1 };
+            else if (sort === 'sold') sortQuery = { totalSold: -1 };
+        }
+
+        const products = await ProductModel.find(query).populate('category').sort(sortQuery);
         res.json({
             success: true,
             count: products.length,
             data: products
-        })
+        });
 
     } catch (error: any) {
-        res.status(500).json({ success: false, message: error.message })
-
+        res.status(500).json({ success: false, message: error.message });
     }
-
 };
 
 export const getProductById = async (req: Request, res: Response) => {
