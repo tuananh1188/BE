@@ -4,6 +4,7 @@ import {
     deleteProduct,
     getAllProducts,
     getProductById,
+    getRelatedProducts,
     updateProduct
 } from '../controllers/product.controller';
 import { authGuard } from '../middlewares/auth.middleware';
@@ -17,6 +18,7 @@ const productRouter = Router();
 //Public router
 productRouter.get('/', getAllProducts);
 productRouter.get('/:id', getProductById);
+productRouter.get('/related/:id', getRelatedProducts);
 
 //Private router
 productRouter.post('/', authGuard, isAdmin, upload.array('images'), validateBody(createProductSchema), createProduct);

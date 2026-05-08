@@ -169,3 +169,29 @@ export const deleteProduct = async (req: Request, res: Response) => {
         });
     }
 };
+
+export const getRelatedProducts = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const product = await ProductModel.findById(id);
+
+        if (!product) {
+            return res.status(404).json({ success: false, message: 'Product not found' });
+        }
+
+        const relatedProducts = await ProductModel.find({
+            category: product.category,
+            _id: { $ne: id }
+        })
+        .limit(4)
+        .populate('category');
+
+        res.status(200).json({
+            success: true,
+            data: relatedProducts
+        });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer, { memoryStorage } from 'multer';
-import { updateProfile, uploadAvatar } from '../controllers/profile.controller';
+import { updateProfile, uploadAvatar, addAddress, updateAddress, deleteAddress, setDefaultAddress } from '../controllers/profile.controller';
 import { authGuard } from '../middlewares/auth.middleware';
 import { validateBody } from '../middlewares/validate.middleware';
 import { updateProfileSchema } from '../validators/profile.validator';
@@ -23,3 +23,9 @@ const upload = multer({
 
 profileRouter.patch('/', authGuard, validateBody(updateProfileSchema), updateProfile);
 profileRouter.post('/avatar', authGuard, upload.single('avatar'), uploadAvatar);
+
+// Address Book
+profileRouter.post('/addresses', authGuard, addAddress);
+profileRouter.patch('/addresses/:addressId', authGuard, updateAddress);
+profileRouter.delete('/addresses/:addressId', authGuard, deleteAddress);
+profileRouter.patch('/addresses/:addressId/default', authGuard, setDefaultAddress);

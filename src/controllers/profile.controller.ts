@@ -47,3 +47,108 @@ export const uploadAvatar = async (req: Request, res: Response) => {
   const updated = await UserModel.findById(userId).select(EXCLUDED_FIELDS);
   return res.json({ avatarUrl: url, publicId, user: updated });
 };
+
+// --- Address Management ---
+
+export const addAddress = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const userId = (req as any).user?.sub;
+    const addressData = req.body;
+
+    const user = await UserModel.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    // If this is the first address, make it default
+    if (user.addresses.length === 0) {
+      addressData.isDefault = true;
+    } else if (addressData.isDefault) {
+      // If setting this as default, unset others
+      user.addresses.forEach(addr => addr.isDefault = false);
+    }
+
+    user.addresses.push(addressData);
+    await user.save();
+
+    return res.json({ success: true, data: user.addresses });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const updateAddress = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const userId = (req as any).user?.sub;
+    const { addressId } = req.params;
+    const updateData = req.body;
+
+    const user = await UserModel.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const addressIndex = user.addresses.findIndex(addr => addr._id.toString() === addressId);
+    if (addressIndex === -1) return res.status(404).json({ success: false, message: 'Address not found' });
+
+    if (updateData.isDefault) {
+      user.addresses.forEach(addr => addr.isDefault = false);
+    }
+
+    user.addresses[addressIndex] = { ...user.addresses[addressIndex], ...updateData };
+    await user.save();
+
+    return res.json({ success: true, data: user.addresses });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const deleteAddress = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const userId = (req as any).user?.sub;
+    const { addressId } = req.params;
+
+    const user = await UserModel.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const address = user.addresses.find(addr => addr._id.toString() === addressId);
+    if (!address) return res.status(404).json({ success: false, message: 'Address not found' });
+
+    const wasDefault = address.isDefault;
+    user.addresses = user.addresses.filter(addr => addr._id.toString() !== addressId);
+
+    // If we deleted the default, set the first remaining as default
+    if (wasDefault && user.addresses.length > 0) {
+      user.addresses[0].isDefault = true;
+    }
+
+    await user.save();
+    return res.json({ success: true, data: user.addresses });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const setDefaultAddress = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const userId = (req as any).user?.sub;
+    const { addressId } = req.params;
+
+    const user = await UserModel.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    let found = false;
+    user.addresses.forEach(addr => {
+      if (addr._id.toString() === addressId) {
+        addr.isDefault = true;
+        found = true;
+      } else {
+        addr.isDefault = false;
+      }
+    });
+
+    if (!found) return res.status(404).json({ success: false, message: 'Address not found' });
+
+    await user.save();
+    return res.json({ success: true, data: user.addresses });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};

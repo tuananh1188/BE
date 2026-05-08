@@ -5,6 +5,10 @@ export interface ReviewDocument extends Document {
     product: mongoose.Types.ObjectId;
     rating: number;
     comment: string;
+    images: string[];
+    helpfulVotes: mongoose.Types.ObjectId[];
+    isVerifiedPurchase: boolean;
+    adminReply?: string;
 }
 
 const reviewSchema = new Schema<ReviewDocument>(
@@ -13,6 +17,10 @@ const reviewSchema = new Schema<ReviewDocument>(
         product: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
         rating: { type: Number, required: true, min: 0, max: 5, default: 0 },
         comment: { type: String, trim: true, default: '' },
+        images: [{ type: String }],
+        helpfulVotes: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+        isVerifiedPurchase: { type: Boolean, default: false },
+        adminReply: { type: String, trim: true },
     },
     { timestamps: true }
 );
