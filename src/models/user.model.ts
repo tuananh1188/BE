@@ -15,6 +15,7 @@ export interface UserDocument extends mongoose.Document {
     address?: string;
     city?: string;
     role: 'user' | 'admin';
+    isBlocked: boolean;
 }
 
 const userSchema = new Schema<UserDocument>(
@@ -38,7 +39,8 @@ const userSchema = new Schema<UserDocument>(
         phone: { type: String, trim: true },
         address: { type: String, trim: true },
         city: { type: String, trim: true },
-        role: { type: String, enum: ['user', 'admin'], default: 'user' }
+        role: { type: String, enum: ['user', 'admin'], default: 'user' },
+        isBlocked: { type: Boolean, default: false }
     },
     { timestamps: true }
 );

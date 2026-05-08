@@ -7,8 +7,10 @@ import {
     getOrderById,
     getAllOrders,
     updateOrderStatus,
-    getDashboardStats
+    getDashboardStats,
+    confirmPayment
 } from '../controllers/order.controller';
+
 
 const orderRouter = Router();
 
@@ -23,6 +25,8 @@ orderRouter.get('/stats', isAdmin, getDashboardStats);
 orderRouter.post('/checkout', createOrder);
 orderRouter.get('/my-orders', getUserOrders);
 orderRouter.get('/:id', getOrderById);
+orderRouter.patch('/:id/confirm-payment', confirmPayment);
 orderRouter.put('/:id', isAdmin, updateOrderStatus);
+
 
 export default orderRouter;

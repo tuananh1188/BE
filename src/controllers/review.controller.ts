@@ -18,27 +18,27 @@ export const createReview = async (req: Request, res: Response): Promise<any> =>
         }
 
         // Validate rating
-        const numRating = Number(rating);
-        if (isNaN(numRating) || numRating < 1 || numRating > 5) {
-            return res.status(400).json({ success: false, message: 'Đánh giá phải là số từ 1 đến 5' });
+        const numRating = Number(rating || 0);
+        if (isNaN(numRating) || numRating < 0 || numRating > 5) {
+            return res.status(400).json({ success: false, message: 'Đánh giá phải là số từ 0 đến 5' });
         }
 
-        // Check if product exists
-        const product = await ProductModel.findById(productId);
-        if (!product) {
-            return res.status(404).json({ success: false, message: 'Không tìm thấy sản phẩm' });
+        // Check if user already rated this product (if they are providing a rating > 0)
+
+        if (numRating > 0) {
+            const existingRating = await ReviewModel.findOne({ 
+                user: new mongoose.Types.ObjectId(userId), 
+                product: new mongoose.Types.ObjectId(productId),
+                rating: { $gt: 0 }
+            });
+            if (existingRating) {
+                return res.status(400).json({ success: false, message: 'Bạn đã đánh giá số sao cho sản phẩm này rồi. Bạn chỉ có thể gửi thêm bình luận.' });
+            }
+        } else if (!comment || comment.trim() === '') {
+            return res.status(400).json({ success: false, message: 'Vui lòng nhập bình luận hoặc đánh giá số sao.' });
         }
 
-        // Check if user already reviewed this product
-        const existingReview = await ReviewModel.findOne({ 
-            user: new mongoose.Types.ObjectId(userId), 
-            product: new mongoose.Types.ObjectId(productId) 
-        });
-        if (existingReview) {
-            return res.status(400).json({ success: false, message: 'Bạn đã đánh giá sản phẩm này rồi.' });
-        }
-
-        // Create new review
+        // Create new review/comment
         const review = await ReviewModel.create({
             user: new mongoose.Types.ObjectId(userId),
             product: new mongoose.Types.ObjectId(productId),
@@ -46,17 +46,22 @@ export const createReview = async (req: Request, res: Response): Promise<any> =>
             comment: comment || ''
         });
 
-        // Recalculate average rating for the product
-        const reviews = await ReviewModel.find({ product: new mongoose.Types.ObjectId(productId) });
-        const numReviews = reviews.length;
-        const totalRating = reviews.reduce((acc, item) => acc + item.rating, 0);
-        const avgRating = totalRating / numReviews;
+        // Recalculate average rating for the product (only from reviews with rating > 0)
+        const ratingReviews = await ReviewModel.find({ 
+            product: new mongoose.Types.ObjectId(productId),
+            rating: { $gt: 0 }
+        });
+        
+        const numRatings = ratingReviews.length;
+        const totalRating = ratingReviews.reduce((acc, item) => acc + item.rating, 0);
+        const avgRating = numRatings > 0 ? totalRating / numRatings : 0;
 
         // Update product
         await ProductModel.findByIdAndUpdate(productId, {
             rating: Math.round(avgRating * 10) / 10,
-            reviewCount: numReviews
+            reviewCount: numRatings
         });
+
 
         // Populate user for response
         await review.populate('user', 'displayName avatarUrl');

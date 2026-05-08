@@ -225,3 +225,38 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         console.log('--- Dashboard Stats Request End ---');
     }
 };
+
+export const confirmPayment = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const userId = (req as any).user?.sub;
+
+        const order = await OrderModel.findById(id);
+
+        if (!order) {
+            return res.status(404).json({ success: false, message: 'Order not found' });
+        }
+
+        // Only the owner can confirm their own payment (unless it's an admin)
+        if (order.userId.toString() !== userId && (req as any).user?.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Not authorized to confirm this payment' });
+        }
+
+        if (order.paymentStatus === 'PAID') {
+            return res.status(400).json({ success: false, message: 'Order is already paid' });
+        }
+
+        order.paymentStatus = 'PAID';
+        // When paid, we can also move orderStatus to PROCESSING
+        if (order.orderStatus === 'PENDING') {
+            order.orderStatus = 'PROCESSING';
+        }
+        
+        await order.save();
+
+        res.json({ success: true, message: 'Payment confirmed successfully', data: order });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+

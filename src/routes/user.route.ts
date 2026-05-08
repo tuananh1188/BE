@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getAllUsers, updateUserRole } from '../controllers/user.controller';
+import { getAllUsers, updateUserRole, toggleBlockUser, deleteUser } from '../controllers/user.controller';
 import { authGuard } from '../middlewares/auth.middleware';
 import { isAdmin } from '../middlewares/admin.middleware';
 
@@ -10,3 +10,6 @@ userRouter.use(isAdmin);
 
 userRouter.get('/', getAllUsers);
 userRouter.patch('/:id/role', updateUserRole);
+userRouter.patch('/:id/toggle-block', toggleBlockUser);
+userRouter.delete('/:id', deleteUser);
+

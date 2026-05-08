@@ -28,6 +28,10 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
+    if (user.isBlocked) {
+      return res.status(403).json({ message: 'Your account has been blocked. Please contact support.' });
+    }
+
     // 2. Kiểm tra xác thực email
     if (!user.isEmailVerified) {
       return res.status(403).json({ message: 'Please verify your email first using register OTP' });
@@ -56,6 +60,10 @@ export const verifyLoginOtp = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Invalid or expired OTP' });
     }
 
+    if (user.isBlocked) {
+      return res.status(403).json({ message: 'Your account has been blocked.' });
+    }
+
     user.otpCode = undefined;
     user.otpExpiresAt = undefined;
     await user.save();
@@ -75,7 +83,11 @@ export const getMe = async (req: Request, res: Response) => {
     const user = await UserModel.findById(userId).select('-password -otpCode -resetToken');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    return res.json(user);
+    if (user.isBlocked) {
+      return res.status(403).json({ message: 'Your account has been blocked.' });
+    }
+
+    return res.json({ success: true, data: user });
   } catch (error: any) {
     return res.status(500).json({ message: error.message });
   }
