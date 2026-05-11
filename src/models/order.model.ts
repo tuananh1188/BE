@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface OrderItemDocument extends Document {
-    product: mongoose.Schema.Types.ObjectId;
+    product: mongoose.Types.ObjectId;
     name: string;
     image: string;
     price: number;
@@ -11,7 +11,7 @@ export interface OrderItemDocument extends Document {
 }
 
 export interface OrderDocument extends Document {
-    userId: mongoose.Schema.Types.ObjectId;
+    userId: mongoose.Types.ObjectId;
     items: OrderItemDocument[];
     shippingAddress: {
         fullName: string;

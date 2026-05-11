@@ -17,13 +17,19 @@ export const toggleFavorite = async (req: Request, res: Response) => {
             return res.status(404).json({ success: false, message: 'Product not found' });
         }
 
-        const existing = await FavoriteModel.findOne({ userId, productId });
+        const existing = await FavoriteModel.findOne({ 
+            userId: userId as any, 
+            productId: productId as any 
+        });
 
         if (existing) {
             await FavoriteModel.deleteOne({ _id: existing._id });
             return res.json({ success: true, message: 'Removed from favorites', isFavorite: false });
         } else {
-            await FavoriteModel.create({ userId, productId });
+            await FavoriteModel.create({ 
+                userId: userId as any, 
+                productId: productId as any 
+            });
             return res.status(201).json({ success: true, message: 'Added to favorites', isFavorite: true });
         }
     } catch (error: any) {
@@ -34,7 +40,7 @@ export const toggleFavorite = async (req: Request, res: Response) => {
 export const getMyFavorites = async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user?.sub;
-        const favorites = await FavoriteModel.find({ userId }).populate('productId');
+        const favorites = await FavoriteModel.find({ userId: userId as any }).populate('productId');
         
         // Filter out favorites where product might have been deleted
         const validFavorites = favorites.filter(f => f.productId);
@@ -51,7 +57,10 @@ export const checkIsFavorite = async (req: Request, res: Response) => {
         const userId = (req as any).user?.sub;
         const { productId } = req.params;
 
-        const existing = await FavoriteModel.findOne({ userId, productId });
+        const existing = await FavoriteModel.findOne({ 
+            userId: userId as any, 
+            productId: productId as any 
+        });
         res.json({ success: true, isFavorite: !!existing });
     } catch (error: any) {
         res.status(500).json({ success: false, message: error.message });

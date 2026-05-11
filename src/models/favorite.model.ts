@@ -1,8 +1,8 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface FavoriteDocument extends Document {
-    userId: mongoose.Schema.Types.ObjectId;
-    productId: mongoose.Schema.Types.ObjectId;
+    userId: mongoose.Types.ObjectId;
+    productId: mongoose.Types.ObjectId;
 }
 
 const favoriteSchema = new Schema<FavoriteDocument>(
