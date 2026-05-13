@@ -27,6 +27,7 @@ export interface UserDocument extends mongoose.Document {
     address?: string; // Legacy field
     city?: string;    // Legacy field
     addresses: UserAddress[];
+    savedVouchers: mongoose.Types.ObjectId[];
     role: 'user' | 'admin';
     isBlocked: boolean;
 }
@@ -64,6 +65,7 @@ const userSchema = new Schema<UserDocument>(
                 isDefault: { type: Boolean, default: false }
             }
         ],
+        savedVouchers: [{ type: Schema.Types.ObjectId, ref: 'Voucher' }],
         role: { type: String, enum: ['user', 'admin'], default: 'user' },
         isBlocked: { type: Boolean, default: false }
     },

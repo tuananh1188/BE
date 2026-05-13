@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { VoucherModel, VoucherType } from '../models/voucher.model';
+import { UserModel } from '../models/user.model';
 
 export const createVoucher = async (req: Request, res: Response) => {
     try {
@@ -14,6 +15,60 @@ export const getAllVouchers = async (req: Request, res: Response) => {
     try {
         const vouchers = await VoucherModel.find().sort({ createdAt: -1 });
         res.json({ success: true, data: vouchers });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const getActiveVouchers = async (req: Request, res: Response) => {
+    try {
+        const now = new Date();
+        const vouchers = await VoucherModel.find({
+            isActive: true,
+            expiryDate: { $gt: now },
+            $expr: { $lt: ["$usedCount", "$usageLimit"] }
+        }).sort({ createdAt: -1 });
+        res.json({ success: true, data: vouchers });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const saveVoucher = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user?.sub;
+        const { code } = req.params;
+
+        if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+        const voucher = await VoucherModel.findOne({ code: String(code).toUpperCase(), isActive: true });
+        if (!voucher) return res.status(404).json({ success: false, message: 'Voucher not found or inactive' });
+
+        const user = await UserModel.findById(userId);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        if (user.savedVouchers.includes(voucher._id as any)) {
+            return res.status(400).json({ success: false, message: 'Voucher already saved' });
+        }
+
+        user.savedVouchers.push(voucher._id as any);
+        await user.save();
+
+        res.json({ success: true, message: 'Voucher saved successfully' });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const getMyVouchers = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user?.sub;
+        if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+        const user = await UserModel.findById(userId).populate('savedVouchers');
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        res.json({ success: true, data: user.savedVouchers });
     } catch (error: any) {
         res.status(500).json({ success: false, message: error.message });
     }
