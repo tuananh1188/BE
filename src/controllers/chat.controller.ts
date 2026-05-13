@@ -28,59 +28,102 @@ const searchProductsDeclaration: FunctionDeclaration = {
 export const handleChat = async (req: Request, res: Response): Promise<any> => {
     try {
         const { message, history } = req.body;
-        
+        console.log(`[Chatbot] Incoming request: "${message}"`);
+
         if (!message) {
             return res.status(400).json({ success: false, message: 'Message is required' });
         }
 
         const genAI = getGenAI();
         if (!genAI) {
-            return res.status(500).json({ success: false, message: 'GEMINI_API_KEY is not configured in backend' });
+            return res.status(500).json({ success: false, message: 'GEMINI_API_KEY is not configured' });
         }
 
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-2.5-flash",
-            systemInstruction: "Bạn là trợ lý ảo SPCK-X41. Khi người dùng hỏi về bất kỳ sản phẩm nào, hãy ưu tiên dùng công cụ searchProducts để tra cứu xem cửa hàng có bán không trước khi trả lời. Nếu searchProducts trả về rỗng, hãy báo là cửa hàng không bán sản phẩm đó. Báo giá tiền kèm chữ 'đ' (ví dụ 150000đ). Trả lời thân thiện, lịch sự. ĐẶC BIỆT LƯU Ý: Khi liệt kê nhiều sản phẩm, BẮT BUỘC phải xuống dòng cho mỗi sản phẩm để dễ đọc.",
-            tools: [{ functionDeclarations: [searchProductsDeclaration] }]
-        });
+        /**
+         * SỬA TẠI ĐÂY: 
+         * 1. Sử dụng apiVersion: 'v1' để đảm bảo tính ổn định.
+         * 2. Loại bỏ các khối try-catch lồng nhau gây rối logic.
+         */
+        const model = genAI.getGenerativeModel(
+            {
+                model: "gemini-1.5-flash",
+                systemInstruction: "Bạn là trợ lý ảo SPCK-X41. Khi người dùng hỏi về bất kỳ sản phẩm nào, hãy ưu tiên dùng công cụ searchProducts để tra cứu xem cửa hàng có bán không trước khi trả lời. Nếu searchProducts trả về rỗng, hãy báo là cửa hàng không bán sản phẩm đó. Báo giá tiền kèm chữ 'đ' (ví dụ 150000đ). Trả lời thân thiện, lịch sự. ĐẶC BIỆT LƯU Ý: Khi liệt kê nhiều sản phẩm, BẮT BUỘC phải xuống dòng cho mỗi sản phẩm để dễ đọc.",
+                tools: [{ functionDeclarations: [searchProductsDeclaration] }]
+            },
+            { apiVersion: 'v1' } // Ép SDK dùng v1 để tránh lỗi 404 trên v1beta của dòng Flash
+        );
 
         const chat = model.startChat({
             history: history || []
         });
 
-        // Gửi tin nhắn từ người dùng
+        // Gửi tin nhắn đầu tiên
         let result = await chat.sendMessage(message);
+        let response = result.response;
+        let foundProducts: any[] = [];
 
-        // Kiểm tra xem AI có muốn gọi hàm (Function Call) không
-        const functionCalls = result.response.functionCalls();
+        // Xử lý Function Calling
+        const functionCalls = response.functionCalls();
         if (functionCalls && functionCalls.length > 0) {
             const call = functionCalls[0];
             if (call.name === "searchProducts") {
                 const keyword = (call.args as any).keyword as string;
                 console.log(`[Chatbot] AI is searching DB for: ${keyword}`);
-                
-                // Thực thi query MongoDB
-                const products = await ProductModel.find({ 
-                    name: { $regex: keyword, $options: 'i' } 
-                })
-                .select('name price stock colors sizes')
-                .limit(5)
-                .lean();
 
-                // Gửi kết quả DB lại cho AI để nó tiếp tục sinh ra câu trả lời
-                result = await chat.sendMessage([{
-                    functionResponse: {
-                        name: "searchProducts",
-                        response: { products: products }
-                    }
-                }]);
+                try {
+                    const products = await ProductModel.find({
+                        name: { $regex: keyword, $options: 'i' }
+                    })
+                        .select('name price originalPrice discount images stock slug totalSold soldPercentage colors sizes')
+                        .limit(5)
+                        .lean();
+
+                    foundProducts = products.map(p => ({
+                        ...p,
+                        _id: p._id.toString()
+                    }));
+
+                    const aiProducts = foundProducts.map(p => ({
+                        name: p.name,
+                        price: p.price,
+                        stock: p.stock,
+                        colors: p.colors,
+                        sizes: p.sizes
+                    }));
+
+                    // Gửi kết quả từ database lại cho AI
+                    result = await chat.sendMessage([{
+                        functionResponse: {
+                            name: "searchProducts",
+                            response: { products: aiProducts }
+                        }
+                    }]);
+                    response = result.response;
+                } catch (dbError: any) {
+                    console.error("[Chatbot] DB Search Error:", dbError);
+                    result = await chat.sendMessage([{
+                        functionResponse: {
+                            name: "searchProducts",
+                            response: { error: "Không thể truy cập dữ liệu sản phẩm lúc này." }
+                        }
+                    }]);
+                    response = result.response;
+                }
             }
         }
 
-        const responseText = result.response.text();
-        return res.json({ success: true, text: responseText });
+        return res.json({
+            success: true,
+            text: response.text(),
+            products: foundProducts
+        });
+
     } catch (error: any) {
-        console.error("Chatbot Error:", error);
-        return res.status(500).json({ success: false, message: error.message });
+        console.error("Chatbot Controller Error:", error.message);
+        return res.status(500).json({
+            success: false,
+            message: "Hệ thống đang bận, vui lòng thử lại sau.",
+            error: error.message
+        });
     }
 };
