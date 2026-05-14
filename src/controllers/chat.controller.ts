@@ -39,19 +39,13 @@ export const handleChat = async (req: Request, res: Response): Promise<any> => {
             return res.status(500).json({ success: false, message: 'GEMINI_API_KEY is not configured' });
         }
 
-        /**
-         * SỬA TẠI ĐÂY: 
-         * 1. Sử dụng apiVersion: 'v1' để đảm bảo tính ổn định.
-         * 2. Loại bỏ các khối try-catch lồng nhau gây rối logic.
-         */
-        const model = genAI.getGenerativeModel(
-            {
-                model: "gemini-1.5-flash",
-                systemInstruction: "Bạn là trợ lý ảo SPCK-X41. Khi người dùng hỏi về bất kỳ sản phẩm nào, hãy ưu tiên dùng công cụ searchProducts để tra cứu xem cửa hàng có bán không trước khi trả lời. Nếu searchProducts trả về rỗng, hãy báo là cửa hàng không bán sản phẩm đó. Báo giá tiền kèm chữ 'đ' (ví dụ 150000đ). Trả lời thân thiện, lịch sự. ĐẶC BIỆT LƯU Ý: Khi liệt kê nhiều sản phẩm, BẮT BUỘC phải xuống dòng cho mỗi sản phẩm để dễ đọc.",
-                tools: [{ functionDeclarations: [searchProductsDeclaration] }]
-            },
-            { apiVersion: 'v1' } // Ép SDK dùng v1 để tránh lỗi 404 trên v1beta của dòng Flash
-        );
+        // Dùng v1beta (mặc định của SDK) vì v1 KHÔNG hỗ trợ 'tools' và 'systemInstruction'.
+        // Lỗi 400 "Unknown name tools / systemInstruction" xảy ra khi ép apiVersion: 'v1'.
+        const model = genAI.getGenerativeModel({
+            model: "gemini-2.5-flash",
+            systemInstruction: "Bạn là trợ lý ảo SPCK-X41. Khi người dùng hỏi về bất kỳ sản phẩm nào, hãy ưu tiên dùng công cụ searchProducts để tra cứu xem cửa hàng có bán không trước khi trả lời. Nếu searchProducts trả về rỗng, hãy báo là cửa hàng không bán sản phẩm đó. Báo giá tiền kèm chữ 'đ' (ví dụ 150000đ). Trả lời thân thiện, lịch sự. ĐẶC BIỆT LƯU Ý: Khi liệt kê nhiều sản phẩm, BẮT BUỘC phải xuống dòng cho mỗi sản phẩm để dễ đọc.",
+            tools: [{ functionDeclarations: [searchProductsDeclaration] }]
+        });
 
         const chat = model.startChat({
             history: history || []
@@ -120,6 +114,23 @@ export const handleChat = async (req: Request, res: Response): Promise<any> => {
 
     } catch (error: any) {
         console.error("Chatbot Controller Error:", error.message);
+
+        // Phát hiện lỗi API key không hợp lệ hoặc bị lộ
+        const msg = error.message || '';
+        if (msg.includes('leaked') || msg.includes('API key') || msg.includes('403') || msg.includes('401')) {
+            return res.status(500).json({
+                success: false,
+                message: "API key không hợp lệ hoặc đã hết hạn. Vui lòng liên hệ admin.",
+                error: error.message
+            });
+        }
+        if (msg.includes('404') || msg.includes('not found')) {
+            return res.status(500).json({
+                success: false,
+                message: "Model AI không khả dụng. Vui lòng thử lại sau.",
+                error: error.message
+            });
+        }
         return res.status(500).json({
             success: false,
             message: "Hệ thống đang bận, vui lòng thử lại sau.",
