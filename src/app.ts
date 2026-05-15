@@ -27,10 +27,10 @@ app.use((req, _res, next) => {
 });
 
 const isAllowedOrigin = (origin: string | undefined): boolean => {
-  if (!origin) return true; // same-origin / server-to-server (Vite proxy)
-  if (origin === 'https://tuananh-bay.vercel.app' || origin === 'https://tuananh-fe.vercel.app') return true;
-  if (/^http:\/\/localhost:\d+$/.test(origin)) return true; // any localhost port
-  return false;
+  // if (!origin) return true; // same-origin / server-to-server (Vite proxy)
+  // if (origin === 'https://tuananh-fe.vercel.app') return true;
+  // if (/^http:\/\/localhost:\d+$/.test(origin)) return true; // any localhost port
+  return true;
 };
 
 app.use(cors({
