@@ -246,15 +246,11 @@ export const confirmPayment = async (req: Request, res: Response) => {
             return res.status(400).json({ success: false, message: 'Order is already paid' });
         }
 
-        order.paymentStatus = 'PAID';
-        // When paid, we can also move orderStatus to PROCESSING
-        if (order.orderStatus === 'PENDING') {
-            order.orderStatus = 'PROCESSING';
-        }
+        order.paymentStatus = 'VERIFYING';
         
         await order.save();
 
-        res.json({ success: true, message: 'Payment confirmed successfully', data: order });
+        res.json({ success: true, message: 'Đã gửi yêu cầu xác nhận thanh toán', data: order });
     } catch (error: any) {
         res.status(500).json({ success: false, message: error.message });
     }

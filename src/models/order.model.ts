@@ -21,7 +21,7 @@ export interface OrderDocument extends Document {
         notes?: string;
     };
     paymentMethod: 'COD' | 'CREDIT_CARD' | 'BANK_TRANSFER';
-    paymentStatus: 'PENDING' | 'PAID' | 'FAILED';
+    paymentStatus: 'PENDING' | 'VERIFYING' | 'PAID' | 'FAILED';
     orderStatus: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
     subtotal: number;
     shippingFee: number;
@@ -68,7 +68,7 @@ const orderSchema = new Schema<OrderDocument>(
         },
         paymentStatus: {
             type: String,
-            enum: ['PENDING', 'PAID', 'FAILED'],
+            enum: ['PENDING', 'VERIFYING', 'PAID', 'FAILED'],
             default: 'PENDING'
         },
         orderStatus: {
