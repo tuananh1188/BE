@@ -20,11 +20,6 @@ import { isAdmin } from './middlewares/admin.middleware';
 
 export const app = express();
 
-// Debug Logging - Top Level
-app.use((req, _res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next();
-});
 
 const isAllowedOrigin = (origin: string | undefined): boolean => {
   // if (!origin) return true; // same-origin / server-to-server (Vite proxy)

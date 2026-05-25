@@ -38,7 +38,12 @@ const productSchema = new Schema<ProductDocument>(
     },
     { timestamps: true }
 );
-productSchema.index({ name: 'text' });
+// Text index for search (covers name + description)
+productSchema.index({ name: 'text', description: 'text' });
+// Indexes for the 4 sort options used in ProductPage
+productSchema.index({ price: 1 });
+productSchema.index({ createdAt: -1 });
+productSchema.index({ totalSold: -1 });
 productSchema.pre('save', async function (this: ProductDocument) {
     if (this.isModified('name')) {
         this.slug = slugify(this.name, {
