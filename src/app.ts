@@ -38,7 +38,12 @@ app.use(cors({
   },
 }));
 app.use(express.json());
-app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 300 }));
+app.set('trust proxy', 1);
+app.use(rateLimit({ 
+  windowMs: 15 * 60 * 1000, 
+  max: 1000, // Increase limit to 1000 for development
+  message: 'Quá nhiều yêu cầu từ IP này, vui lòng thử lại sau 15 phút' 
+}));
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRouter);
