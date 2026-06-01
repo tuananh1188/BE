@@ -59,10 +59,24 @@ export const createOrder = async (req: Request, res: Response) => {
 
         // Apply Voucher if exists
         if (promoCode) {
-            const voucher = await VoucherModel.findOne({ code: promoCode, isActive: true });
+            const normalizedCode = promoCode.trim().toUpperCase();
+            console.log(`[Voucher] Attempting to apply: ${normalizedCode}`);
+            
+            const voucher = await VoucherModel.findOne({ code: normalizedCode, isActive: true });
+            
             if (voucher) {
-                // Validate expiry
-                if (new Date(voucher.expiryDate) > new Date() && voucher.usedCount < voucher.usageLimit && totalAmount >= voucher.minOrderAmount) {
+                // Validate expiry (Allow until end of day)
+                const expiryDate = new Date(voucher.expiryDate);
+                expiryDate.setHours(23, 59, 59, 999);
+                const now = new Date();
+
+                const isNotExpired = expiryDate >= now;
+                const isWithinUsageLimit = voucher.usedCount < voucher.usageLimit;
+                const isMinAmountMet = totalAmount >= voucher.minOrderAmount;
+
+                console.log(`[Voucher] Validation: NotExpired=${isNotExpired}, WithinLimit=${isWithinUsageLimit}, MinPriceMet=${isMinAmountMet}`);
+
+                if (isNotExpired && isWithinUsageLimit && isMinAmountMet) {
                     if (voucher.type === 'fixed') {
                         discountAmount = voucher.value;
                     } else {
@@ -73,10 +87,16 @@ export const createOrder = async (req: Request, res: Response) => {
                     }
                     totalAmount = Math.max(0, totalAmount - discountAmount);
                     
+                    console.log(`[Voucher] Applied! Discount: ${discountAmount}, New Total: ${totalAmount}`);
+
                     // Increment voucher usage
                     voucher.usedCount += 1;
                     await voucher.save();
+                } else {
+                    console.log(`[Voucher] Failed validation for code: ${normalizedCode}`);
                 }
+            } else {
+                console.log(`[Voucher] Not found or inactive: ${normalizedCode}`);
             }
         }
 
@@ -92,6 +112,7 @@ export const createOrder = async (req: Request, res: Response) => {
             shippingFee,
             tax,
             totalAmount,
+            discountAmount,
             promoCode
         });
 

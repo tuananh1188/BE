@@ -27,6 +27,7 @@ export interface OrderDocument extends Document {
     shippingFee: number;
     tax: number;
     totalAmount: number;
+    discountAmount: number;
     promoCode?: string;
 }
 
@@ -80,6 +81,7 @@ const orderSchema = new Schema<OrderDocument>(
         shippingFee: { type: Number, default: 0 },
         tax: { type: Number, default: 0 },
         totalAmount: { type: Number, required: true },
+        discountAmount: { type: Number, default: 0 },
         promoCode: { type: String }
     },
     { timestamps: true }

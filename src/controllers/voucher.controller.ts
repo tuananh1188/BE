@@ -25,7 +25,7 @@ export const getActiveVouchers = async (req: Request, res: Response) => {
         const now = new Date();
         const vouchers = await VoucherModel.find({
             isActive: true,
-            expiryDate: { $gt: now },
+            expiryDate: { $gte: new Date(now.setHours(0,0,0,0)) }, // Show vouchers that expire today or later
             $expr: { $lt: ["$usedCount", "$usageLimit"] }
         }).sort({ createdAt: -1 });
         res.json({ success: true, data: vouchers });
@@ -88,9 +88,11 @@ export const validateVoucher = async (req: Request, res: Response) => {
             return res.status(404).json({ success: false, message: 'Invalid or inactive voucher code' });
         }
 
-        // Check expiry
-        if (new Date() > voucher.expiryDate) {
-            return res.status(400).json({ success: false, message: 'Voucher has expired' });
+        // Check expiry (Allow until end of day)
+        const expiryDate = new Date(voucher.expiryDate);
+        expiryDate.setHours(23, 59, 59, 999);
+        if (new Date() > expiryDate) {
+            return res.status(400).json({ success: false, message: 'Mã giảm giá này đã hết hạn.' });
         }
 
         // Check usage limit
